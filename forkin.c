@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -19,7 +18,7 @@ int myrand() {
       printf("error\n");;
       return 0;
     }
-    random = *number;
+    random = abs(*number);
     free(number);
   }
   int clo = close(randD);
@@ -32,24 +31,26 @@ int myrand() {
 
 int main(){
   printf("Parent info-> pid: %i ppid: %i\n",  getpid(), getppid());
-  int childInfo;
   int f = fork();
   if (f == -1) {
     printf("error");
-  } else if (f) { // if f returns a pid, parent
+  }
+  if (f != 0) { // if f returns a pid, parent
     f = fork(); 
-  } else { // if f == 0, child
+  }
+  if (f == 0) { // child
     printf("Child info-> pid: %i ppid: %i\n", getpid(), getppid());
     int time = myrand();
-    printf("sleeping...\n");
+    printf("sleeping for %i sec...\n", time);
     sleep(time);
     printf("done sleeping\n");
-    printf("Child exit\n");
+    printf("Child %i exit\n", getpid());
     return time;
   }
+  int childInfo;
   int pid = wait(&childInfo);
   int sec = WEXITSTATUS(childInfo);
   printf("Child %i slept for %i sec\n", pid, sec);
-  printf("Parent exit\n");
+  printf("Parent %i exit\n", getpid());
   return 0;
 }
