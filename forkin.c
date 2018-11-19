@@ -1,46 +1,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include<sys/stat.h>
-#include<unistd.h>
-#include<fcntl.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <fcntl.h>
 int myrand() {
+  int random;
   int randD = open("/dev/random", O_RDONLY);
-  if(randD < 0)
+  if (randD < 0) {
+    printf("error\n");
     return 0;
-  else {
-    unsigned int *number = calloc(1, sizeof(int));
-    int result = read(randD, number, sizeof number);
-    if (result < 0)
-      return 0;
-    return *number;
   }
+  else {
+    int *number = malloc(sizeof(int));
+    int result = read(randD, number, sizeof(number));
+    if (result < 0) {
+      printf("error\n");;
+      return 0;
+    }
+    random = *number;
+    free(number);
+  }
+  int clo = close(randD);
+  if (clo < 0) {
+    printf("error\n");
+    return 0;
+  }
+  return random%16 + 5;
 }
-void forkexample() 
-{ 
-    // child process because return value zero 
-    if (fork() == 0) 
-        printf("Hello from Child!\n"); 
-  
-    // parent process because return value non-zero. 
-    else
-        printf("Hello from Parent!\n"); 
-} 
-
 
 int main(){
-  int f1 = fork();
-  if (f1 == -1) {
+  printf("Parent info-> pid: %i ppid: %i\n",  getpid(), getppid());
+  int childInfo;
+  int f = fork();
+  if (f == -1) {
     printf("error");
-  } else if(f1) { // if f1 is a pid
-    f1 = fork();
-    printf("Parent of %i. pid: %i ppid: %i\n", f1, getpid(), getppid());
-    
-  } else { // if f1 == 0
-    printf("I am a child. pid: %i ppid: %i\n", getpid(), getppid());
-    /* printf("sleeping...\n"); */
-    /* sleep(5 + myrand() % 15); */
-    /* printf("done sleeping\n"); */
+  } else if (f) { // if f returns a pid, parent
+    f = fork(); 
+  } else { // if f == 0, child
+    printf("Child info-> pid: %i ppid: %i\n", getpid(), getppid());
+    int time = myrand();
+    printf("sleeping...\n");
+    sleep(time);
+    printf("done sleeping\n");
+    printf("Child exit\n");
+    return time;
   }
+  int pid = wait(&childInfo);
+  int sec = WEXITSTATUS(childInfo);
+  printf("Child %i slept for %i sec\n", pid, sec);
+  printf("Parent exit\n");
   return 0;
 }
